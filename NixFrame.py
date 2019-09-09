@@ -126,31 +126,30 @@ def DataFrame(nixfile, before=0.001, after=0.001, savefile=False, saveto='./', m
     keys = np.unique(k)
     if 'repro_tag_id' not in keys:
         for i in range(len(data_df)):
-            data_df[i]['repro_tag_id'] = protocols[~(protocols.position >= data_df[i]['onset times'])]['id'].iloc[-1]
+            data_df[i]['repro_tag_id'] = protocols[~(protocols.position >= data_df[i]['onset_times'])]['id'].iloc[-1]
 
     traces_idx = np.where([("data.sampled" in d.type) or ("data.events" in d.type) for d in data_arrays])[0]
     traces_df = []
 
 
     for i,idx in enumerate(traces_idx):
-        # print(i,i/len(traces_idx))
         for j in range(len(data_df)):
             if i == 0:
                 traces_df.append({})
 
             if "data.sampled" in data_arrays[names[int(idx)]].type:
-                idx0 = int((data_df[j]['onset times'] - before) / dt)
-                idx1 = int((data_df[j]['onset times'] + data_df[j]['durations'] + after) / dt + 1)
+                idx0 = int((data_df[j]['onset_times'] - before) / dt)
+                idx1 = int((data_df[j]['onset_times'] + data_df[j]['durations'] + after) / dt + 1)
                 # traces_df[names[idx]] = data_arrays[int(idx)][:][idx0:idx1]
                 traces_df[j][names[idx]] = data_arrays[names[int(idx)]][idx0:idx1]
             elif "data.events" in data_arrays[names[int(idx)]].type:
-                t0 = data_df[j]['onset times'] - before
-                t1 = data_df[j]['onset times'] + data_df[j]['durations'] + after
+                t0 = data_df[j]['onset_times'] - before
+                t1 = data_df[j]['onset_times'] + data_df[j]['durations'] + after
                 arr = data_arrays[names[int(idx)]][:]
                 traces_df[j][names[idx]] = arr[(arr>=t0) & (arr<=t1)]
 
             if i == 0:
-                traces_df[j]['time'] = time[idx0:idx1] - data_df[j]['onset times']
+                traces_df[j]['time'] = time[idx0:idx1] - data_df[j]['onset_times']
                 traces_df[j]['time_before_stimulus'] = before
                 traces_df[j]['time_after_stimulus'] = after
                 traces_df[j]['samplingrate'] = 1 / dt
@@ -164,7 +163,6 @@ def DataFrame(nixfile, before=0.001, after=0.001, savefile=False, saveto='./', m
 
 
     metadic = {}
-    print('meta')
     for i,key in enumerate(protocols.id):
         d = GetMetadataDict(tag[key].metadata)
         if (len(d.keys()) == 1) and ('RePro-Info' in list(d.keys())[0]):
@@ -332,7 +330,7 @@ def PNSubtraction(df, currenttrace='Current-1', newcurrenttrace='Current-2', ker
             trace_id = df.TraceId.iloc[i]
             idxvec = np.where((df.TraceId == trace_id) & (df.type == 'PNSubtraction'))[0]
         else:
-            delays = (df['onset times'][df.type == 'PNSubtraction']) - df['onset times'].iloc[i]
+            delays = (df['onset_times'][df.type == 'PNSubtraction']) - df['onset_times'].iloc[i]
             maxidx = delays[np.array(delays)<0].index[-1]
             idxvec = np.arange(maxidx-np.abs(df.pn.iloc[i])+1, maxidx+.1, dtype=int)
 
@@ -370,10 +368,8 @@ def PNSubtraction(df, currenttrace='Current-1', newcurrenttrace='Current-2', ker
 
 
         if len(pn_trace) < len(I_trace):
-            # print(len(pn_traces) - len(I_trace))
             I_trace = I_trace[:len(pn_trace)]
         elif len(pn_trace) > len(I_trace):
-            # print(len(pn_traces) - len(I_trace))
             pn_trace = pn_trace[:len(I_trace)]
 
         currentdic[idx] = {}
@@ -408,7 +404,7 @@ def QualityControl(df, currenttrace='Current-1', potentialtrace='V-1', delimiter
         qc[i] = {}
         qc[i][prefix + currenttrace + affix] = df[df.type == 'QualityControl'][currenttrace].iloc[i]
         qc[i][prefix + potentialtrace + affix] = df[df.type == 'QualityControl'][potentialtrace].iloc[i]
-        qc[i][prefix + 'onset times' + affix] = df[df.type == 'QualityControl']['onset times'].iloc[i]
+        qc[i][prefix + 'onset_times' + affix] = df[df.type == 'QualityControl']['onset_times'].iloc[i]
         qc[i][prefix + 'holdingpotential' + affix] = df[df.type == 'QualityControl']['tag_meta']['settings']['holdingpotential'].iloc[i]
         if 'TraceId' in df.columns:
             qc[i][prefix + 'TraceId' + affix] = df[df.type == 'QualityControl']['TraceId'].iloc[i]
@@ -433,7 +429,7 @@ def QualityControl(df, currenttrace='Current-1', potentialtrace='V-1', delimiter
             qc_dic[i] = qc[np.where(qc_df[prefix + 'TraceId' + affix] == df.TraceId.loc[idx])[0][0]]
         else:
             None
-        delays = qc_df[prefix + 'onset times' + affix] - df['onset times'].loc[idx]
+        delays = qc_df[prefix + 'onset_times' + affix] - df['onset_times'].loc[idx]
         maxidx = np.where(delays[np.array(delays) < 0])[0][0]
         qc_dic[i] = qc[maxidx]
 
