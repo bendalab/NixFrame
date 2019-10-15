@@ -6,7 +6,6 @@ import pickle
 import helperfunctions as hf
 from copy import deepcopy
 
-
 '''
 This File is meant to convert .nix Files into a more readable format (pandas.DataFrame)
 
@@ -139,14 +138,21 @@ def DataFrame(nixfile, before=0.001, after=0.001, savefile=False, saveto='./', m
 
             if "data.sampled" in data_arrays[names[int(idx)]].type:
                 idx0 = int((data_df[j]['onset_times'] - before) / dt)
-                idx1 = int((data_df[j]['onset_times'] + data_df[j]['durations'] + after) / dt + 1)
-                # traces_df[names[idx]] = data_arrays[int(idx)][:][idx0:idx1]
-                traces_df[j][names[idx]] = data_arrays[names[int(idx)]][idx0:idx1]
+                idx1 = int((data_df[j]['onset_times'] + data_df[j]['durations'] + after) / dt)
+                if idx0>=idx1:
+                    traces_df[j][names[idx]] = np.array([np.nan])
+                else:
+                    traces_df[j][names[idx]] = data_arrays[names[int(idx)]][idx0:idx1]
             elif "data.events" in data_arrays[names[int(idx)]].type:
+                idx0 = int((data_df[j]['onset_times'] - before) / dt)
+                idx1 = int((data_df[j]['onset_times'] + data_df[j]['durations'] + after) / dt)
                 t0 = data_df[j]['onset_times'] - before
                 t1 = data_df[j]['onset_times'] + data_df[j]['durations'] + after
-                arr = data_arrays[names[int(idx)]][:]
-                traces_df[j][names[idx]] = arr[(arr>=t0) & (arr<=t1)]
+                if t0>=t1:
+                    traces_df[j][names[idx]] = np.array([np.nan])
+                else:
+                    arr = data_arrays[names[int(idx)]][:]
+                    traces_df[j][names[idx]] = arr[(arr>=t0) & (arr<=t1)] - data_df[j]['onset_times']
 
             if i == 0:
                 traces_df[j]['time'] = time[idx0:idx1] - data_df[j]['onset_times']
@@ -160,7 +166,6 @@ def DataFrame(nixfile, before=0.001, after=0.001, savefile=False, saveto='./', m
                 traces_df[j]['protocol'] = np.array(protocols[protocols.id == data_df[j]['repro_tag_id']].name)[0].split('_')[0]
                 traces_df[j]['protocol_number'] = np.array(protocols[protocols.id == str(data_df[j]['repro_tag_id'])].name)[0].split('_')[1]
                 traces_df[j]['id'] = data_df[j]['repro_tag_id']
-
 
     metadic = {}
     for i,key in enumerate(protocols.id):
